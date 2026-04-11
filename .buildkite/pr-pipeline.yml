@@ -1,0 +1,51 @@
+# Buildkite PR Pipeline
+# Runs on all branches except main
+steps:
+  - label: ":hammer: PR Build"
+    key: pr-build
+    concurrency_group: "spork-pr/$BUILDKITE_BRANCH"
+    concurrency: 1
+    concurrency_method: eager
+    agents:
+      queue: "go-kit"
+    commands:
+      - |
+        echo "--- :key: Setting up SSH key"
+        mkdir -p /root/.ssh
+        ssh-keyscan -H github.com >> /root/.ssh/known_hosts 2>/dev/null || true
+        echo "SSH key setup complete"
+
+      - |
+        echo "--- :git: Configuring git to use SSH"
+        git config --global url."git@github.com:".insteadOf "https://github.com/"
+
+      - |
+        echo "--- :go: Downloading Go modules"
+        go mod download
+
+      - |
+        echo "--- :mag: Checking go.mod and go.sum are up to date"
+        go mod tidy
+        if ! git diff --exit-code go.mod go.sum; then
+          echo ""
+          echo "^^^ +++"
+          echo "go.mod or go.sum has uncommitted changes after running 'go mod tidy'."
+          echo "Please run the following locally and commit the result:"
+          echo ""
+          echo "  go mod tidy"
+          echo ""
+          exit 1
+        fi
+        echo "go.mod and go.sum are up to date"
+
+      - |
+        echo "--- :lint-roller: Running linter"
+        golangci-lint run
+
+      - |
+        echo "--- :test_tube: Running tests"
+        go test ./... -parallel=8 -timeout 5m
+
+      - |
+        echo "--- :hammer: Compiling binary"
+        CGO_ENABLED=0 go build -o bin/spork .

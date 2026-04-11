@@ -1,0 +1,46 @@
+version: "2"
+
+run:
+  issues-exit-code: 1
+  tests: true
+  timeout: 5m
+
+linters:
+  default: none
+  enable:
+    - misspell
+    - revive
+    - whitespace
+    - gosec
+  exclusions:
+    rules:
+      - path: .*
+        linters:
+          - revive
+        name: var-naming
+        disabled: true
+      - path: .*
+        name: receiver-naming
+        severity: warning
+        disabled: true
+        linters:
+          - revive
+      - path: _test\.go$
+        name: whitespace
+        severity: warning
+        disabled: true
+        linters:
+          - whitespace
+      - path: _test\.go
+        text: "Potential hardcoded credentials"
+        linters:
+          - gosec
+
+  settings:
+    misspell:
+      locale: US
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

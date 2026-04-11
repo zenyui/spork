@@ -1,0 +1,13 @@
+# Buildkite Pipeline Orchestrator
+# This is the entry point that routes to the appropriate pipeline based on the branch
+
+steps:
+  - label: ":pipeline: Upload Pipeline"
+    command: |
+      if [ "$BUILDKITE_BRANCH" = "main" ]; then
+        echo "Uploading main pipeline"
+        buildkite-agent pipeline upload .buildkite/main-pipeline.yml
+      else
+        echo "Uploading PR pipeline"
+        buildkite-agent pipeline upload .buildkite/pr-pipeline.yml
+      fi
