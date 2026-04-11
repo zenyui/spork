@@ -7,7 +7,7 @@ No more juggling stashes. No more "hold on let me commit this first." Just `spor
 ## Install
 
 ```sh
-go install github.com/layer-nine/spork
+go install github.com/layer-nine/spork@latest
 ```
 
 ## Usage
