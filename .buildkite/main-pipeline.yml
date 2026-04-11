@@ -47,5 +47,24 @@ steps:
         go test ./... -parallel=8 -timeout 5m
 
       - |
+        echo "--- :git: Configuring git for semantic-release"
+        git config --global user.email "ci@layer9.com"
+        git config --global user.name "Buildkite"
+
+      - |
+        echo "--- :label: Creating release and determining version"
+        export GITHUB_TOKEN="$GITHUB_CI_PAT"
+        export GITHUB_REPOSITORY=layer-nine/spork
+
+        semantic-release --force-bump-patch-version --version-file
+
+        VERSION=$$(cat .version)
+        echo "Building version: $$VERSION"
+        buildkite-agent meta-data set "release-version" "$$VERSION"
+
+      - |
         echo "--- :hammer: Compiling binary"
-        CGO_ENABLED=0 go build -o bin/spork .
+        VERSION=$$(buildkite-agent meta-data get "release-version")
+        CGO_ENABLED=0 go build \
+          -ldflags "-X 'github.com/layer-nine/spork/cmd.Version=$${VERSION}'" \
+          -o bin/spork .
