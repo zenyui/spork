@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -11,7 +12,7 @@ import (
 
 var createCmd = &cobra.Command{
 	Use:   "create [name]",
-	Short: "Create a new worktree with symlinked gitignored files",
+	Short: "Create a new worktree with copied gitignored files",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := ""
@@ -59,28 +60,78 @@ func runCreate(name string) error {
 	}
 
 	if len(ignoredEntries) == 0 {
-		fmt.Println("no gitignored files to symlink")
+		fmt.Println("no gitignored files to copy")
 	} else {
-		fmt.Printf("symlinking %d gitignored entries...\n", len(ignoredEntries))
+		fmt.Printf("copying %d gitignored entries...\n", len(ignoredEntries))
 	}
 
 	for _, entry := range ignoredEntries {
 		src := filepath.Join(repoRoot, entry)
 		dst := filepath.Join(worktreePath, entry)
 
-		if err := os.MkdirAll(filepath.Dir(dst), 0o750); err != nil {
-			return fmt.Errorf("creating parent dir for %s: %w", entry, err)
-		}
-
-		if err := os.Symlink(src, dst); err != nil {
-			if os.IsExist(err) {
-				continue
-			}
-			return fmt.Errorf("symlinking %s: %w", entry, err)
+		if err := copyEntry(src, dst); err != nil {
+			return fmt.Errorf("copying %s: %w", entry, err)
 		}
 	}
 
 	fmt.Printf("\ndone! worktree ready at:\n  %s\n", worktreePath)
 	fmt.Printf("\nopen in your IDE:\n  code %s\n  cursor %s\n", worktreePath, worktreePath)
 	return nil
+}
+
+func copyEntry(src, dst string) error {
+	info, err := os.Lstat(src)
+	if err != nil {
+		return err
+	}
+
+	if info.IsDir() {
+		return copyDir(src, dst)
+	}
+	return copyFile(src, dst)
+}
+
+func copyDir(src, dst string) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(dst, rel)
+
+		if info.IsDir() {
+			return os.MkdirAll(target, info.Mode())
+		}
+		return copyFile(path, target)
+	})
+}
+
+func copyFile(src, dst string) error {
+	if err := os.MkdirAll(filepath.Dir(dst), 0o750); err != nil {
+		return err
+	}
+
+	in, err := os.Open(src) //nolint:gosec // paths are from our own repo, not untrusted input
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	info, err := in.Stat()
+	if err != nil {
+		return err
+	}
+
+	out, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, info.Mode()) //nolint:gosec // paths are from our own repo
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	return err
 }
