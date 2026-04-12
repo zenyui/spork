@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
@@ -33,8 +33,12 @@ func runList() error {
 	}
 
 	for _, wt := range worktrees {
-		name := strings.TrimPrefix(wt.Branch, "spork/")
-		fmt.Printf("  %s\t%s\n", name, wt.Path)
+		name := filepath.Base(wt.Path)
+		if wt.Branch != "" && wt.Branch != "spork/"+name {
+			fmt.Printf("  %s\t%s\t(%s)\n", name, wt.Path, wt.Branch)
+		} else {
+			fmt.Printf("  %s\t%s\n", name, wt.Path)
+		}
 	}
 	return nil
 }

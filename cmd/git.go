@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -57,15 +58,23 @@ func listWorktrees() ([]worktreeInfo, error) {
 	return entries, nil
 }
 
-// sporkWorktrees returns only the worktrees created by spork (branch starts with "spork/").
+// sporkWorktrees returns only the worktrees created by spork.
+// A worktree is considered spork-managed if its path is under ~/.spork/.
 func sporkWorktrees() ([]worktreeInfo, error) {
 	all, err := listWorktrees()
 	if err != nil {
 		return nil, err
 	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("getting home directory: %w", err)
+	}
+	sporkDir := filepath.Join(home, ".spork") + string(filepath.Separator)
+
 	var filtered []worktreeInfo
 	for _, wt := range all {
-		if strings.HasPrefix(wt.Branch, "spork/") {
+		if strings.HasPrefix(wt.Path, sporkDir) {
 			filtered = append(filtered, wt)
 		}
 	}

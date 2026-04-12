@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
@@ -26,13 +26,12 @@ func runPath(name string) error {
 		return err
 	}
 
-	target := strings.TrimPrefix(name, "spork/")
 	for _, wt := range worktrees {
-		if strings.TrimPrefix(wt.Branch, "spork/") == target {
+		if filepath.Base(wt.Path) == name {
 			fmt.Print(wt.Path)
 			return nil
 		}
 	}
 
-	return fmt.Errorf("no spork worktree named %q", target)
+	return fmt.Errorf("no spork worktree named %q", name)
 }

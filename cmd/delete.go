@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
@@ -27,21 +27,19 @@ func runDelete(name string) error {
 		return err
 	}
 
-	// Find the matching worktree by name (with or without spork/ prefix)
-	target := strings.TrimPrefix(name, "spork/")
+	// Find the matching worktree by directory name
 	var found *worktreeInfo
 	for _, wt := range worktrees {
-		wtName := strings.TrimPrefix(wt.Branch, "spork/")
-		if wtName == target {
+		if filepath.Base(wt.Path) == name {
 			found = &wt
 			break
 		}
 	}
 
 	if found == nil {
-		fmt.Printf("no spork worktree named %q\n\navailable:\n", target)
+		fmt.Printf("no spork worktree named %q\n\navailable:\n", name)
 		for _, wt := range worktrees {
-			fmt.Printf("  %s\n", strings.TrimPrefix(wt.Branch, "spork/"))
+			fmt.Printf("  %s\n", filepath.Base(wt.Path))
 		}
 		return fmt.Errorf("worktree not found")
 	}
