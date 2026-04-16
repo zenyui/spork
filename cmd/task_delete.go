@@ -40,7 +40,7 @@ func runTaskDelete(id string) error {
 	db, dbErr := openDB()
 	if dbErr == nil {
 		_ = deleteLinksForTask(db, id)
-		db.Close()
+		_ = db.Close()
 	}
 
 	fmt.Printf("deleted task %q\n", id)

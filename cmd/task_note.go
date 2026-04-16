@@ -37,7 +37,7 @@ func runTaskNote(id string) error {
 		editor = "vi"
 	}
 
-	c := exec.Command(editor, notePath)
+	c := exec.Command(editor, notePath) //nolint:gosec // editor is from user's $EDITOR env var
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr

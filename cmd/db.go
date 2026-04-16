@@ -23,7 +23,7 @@ func openDB() (*sql.DB, error) {
 		return nil, fmt.Errorf("opening database: %w", err)
 	}
 	if err := migrateDB(db); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("migrating database: %w", err)
 	}
 	return db, nil

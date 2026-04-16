@@ -50,7 +50,7 @@ func runTaskCreate(id string) error {
 <!-- mark tasks done with [x]: -->
 <!-- - [x] completed task -->
 `, id)
-	if err := os.WriteFile(notePath, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(notePath, []byte(content), 0o600); err != nil {
 		return fmt.Errorf("writing task notes: %w", err)
 	}
 

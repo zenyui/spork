@@ -48,7 +48,7 @@ func runTaskList() error {
 			for _, id := range ids {
 				linked[id] = true
 			}
-			db.Close()
+			_ = db.Close()
 		}
 	}
 

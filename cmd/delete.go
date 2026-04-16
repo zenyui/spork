@@ -58,7 +58,7 @@ func runDelete(name string) error {
 	db, dbErr := openDB()
 	if dbErr == nil {
 		_ = deleteLinksForSpork(db, found.Path)
-		db.Close()
+		_ = db.Close()
 	}
 
 	fmt.Println("done!")
