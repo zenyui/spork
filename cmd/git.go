@@ -59,22 +59,22 @@ func listWorktrees() ([]worktreeInfo, error) {
 }
 
 // sporkWorktrees returns only the worktrees created by spork.
-// A worktree is considered spork-managed if its path is under ~/.spork/.
+// A worktree is considered spork-managed if its path is under ~/.spork/code/.
 func sporkWorktrees() ([]worktreeInfo, error) {
 	all, err := listWorktrees()
 	if err != nil {
 		return nil, err
 	}
 
-	home, err := os.UserHomeDir()
+	codeDir, err := sporkCodeDir()
 	if err != nil {
-		return nil, fmt.Errorf("getting home directory: %w", err)
+		return nil, err
 	}
-	sporkDir := filepath.Join(home, ".spork") + string(filepath.Separator)
+	codeDirSlash := codeDir + string(filepath.Separator)
 
 	var filtered []worktreeInfo
 	for _, wt := range all {
-		if strings.HasPrefix(wt.Path, sporkDir) {
+		if strings.HasPrefix(wt.Path, codeDirSlash) {
 			filtered = append(filtered, wt)
 		}
 	}

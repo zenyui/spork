@@ -36,12 +36,12 @@ func runCreate(name string) error {
 		return err
 	}
 
-	home, err := os.UserHomeDir()
+	codeDir, err := sporkCodeDir()
 	if err != nil {
-		return fmt.Errorf("getting home directory: %w", err)
+		return err
 	}
 	repoName := filepath.Base(repoRoot)
-	worktreePath := filepath.Join(home, ".spork", repoName, name)
+	worktreePath := filepath.Join(codeDir, repoName, name)
 
 	branch := "spork/" + name
 	if branchExists(branch) {

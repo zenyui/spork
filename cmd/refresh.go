@@ -43,13 +43,13 @@ func runRefresh(name string, fresh bool) error {
 		return fmt.Errorf("getting working directory: %w", err)
 	}
 
-	home, err := os.UserHomeDir()
+	codeDir, err := sporkCodeDir()
 	if err != nil {
-		return fmt.Errorf("getting home directory: %w", err)
+		return err
 	}
-	sporkDir := filepath.Join(home, ".spork") + string(filepath.Separator)
-	if !strings.HasPrefix(cwd+string(filepath.Separator), sporkDir) {
-		return fmt.Errorf("not in a spork worktree — run this from a worktree under %s", sporkDir)
+	codeDirSlash := codeDir + string(filepath.Separator)
+	if !strings.HasPrefix(cwd+string(filepath.Separator), codeDirSlash) {
+		return fmt.Errorf("not in a spork worktree — run this from a worktree under %s", codeDir)
 	}
 
 	// Check for uncommitted changes.

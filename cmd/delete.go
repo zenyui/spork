@@ -54,6 +54,13 @@ func runDelete(name string) error {
 		return fmt.Errorf("git branch -D: %w", err)
 	}
 
+	// Clean up any task links
+	db, dbErr := openDB()
+	if dbErr == nil {
+		_ = deleteLinksForSpork(db, found.Path)
+		db.Close()
+	}
+
 	fmt.Println("done!")
 	return nil
 }
