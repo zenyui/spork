@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -80,15 +82,45 @@ func runCreate(name string) error {
 }
 
 func copyEntry(src, dst string) error {
+	if err := os.MkdirAll(filepath.Dir(dst), 0o750); err != nil {
+		return err
+	}
+	if err := fastCopy(src, dst); err == nil {
+		return nil
+	}
+
 	info, err := os.Lstat(src)
 	if err != nil {
 		return err
 	}
 
+	if info.Mode()&os.ModeSymlink != 0 {
+		return copySymlink(src, dst)
+	}
 	if info.IsDir() {
 		return copyDir(src, dst)
 	}
 	return copyFile(src, dst)
+}
+
+// fastCopy uses the OS's copy-on-write clone when available (APFS on darwin,
+// reflink-capable filesystems on linux). Returns an error to signal the caller
+// should fall back to a manual walk-based copy.
+func fastCopy(src, dst string) error {
+	var args []string
+	switch runtime.GOOS {
+	case "darwin":
+		args = []string{"-cR", src, dst}
+	case "linux":
+		args = []string{"--reflink=auto", "-r", src, dst}
+	default:
+		return fmt.Errorf("fast copy unsupported on %s", runtime.GOOS)
+	}
+	cmd := exec.Command("cp", args...) //nolint:gosec // args are fixed flags plus our own paths
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("cp %v: %w: %s", args, err, string(out))
+	}
+	return nil
 }
 
 func copyDir(src, dst string) error {
@@ -103,11 +135,26 @@ func copyDir(src, dst string) error {
 		}
 		target := filepath.Join(dst, rel)
 
+		if info.Mode()&os.ModeSymlink != 0 {
+			return copySymlink(path, target)
+		}
 		if info.IsDir() {
 			return os.MkdirAll(target, info.Mode())
 		}
 		return copyFile(path, target)
 	})
+}
+
+func copySymlink(src, dst string) error {
+	link, err := os.Readlink(src)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(dst), 0o750); err != nil {
+		return err
+	}
+	_ = os.Remove(dst)
+	return os.Symlink(link, dst)
 }
 
 func copyFile(src, dst string) error {
