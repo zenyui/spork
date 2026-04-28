@@ -13,9 +13,10 @@ import (
 )
 
 var createCmd = &cobra.Command{
-	Use:   "create [name]",
-	Short: "Create a new worktree with copied gitignored files",
-	Args:  cobra.MaximumNArgs(1),
+	Use:     "create [name]",
+	Aliases: []string{"new"},
+	Short:   "Create a new worktree with copied gitignored files",
+	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := ""
 		if len(args) > 0 {
