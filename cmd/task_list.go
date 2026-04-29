@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 )
@@ -38,36 +39,67 @@ func runTaskList() error {
 		return err
 	}
 
-	// Figure out which tasks are linked to the current spork (if we're in one)
 	linked := map[string]bool{}
 	sporkPath, sporkErr := currentSporkPath()
-	if sporkErr == nil {
-		db, dbErr := openDB()
-		if dbErr == nil {
+	sporksByTask := map[string][]string{}
+	if db, dbErr := openDB(); dbErr == nil {
+		if sporkErr == nil {
 			ids, _ := taskIDsForSpork(db, sporkPath)
 			for _, id := range ids {
 				linked[id] = true
 			}
-			_ = db.Close()
 		}
+		for _, e := range entries {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+				continue
+			}
+			id := strings.TrimSuffix(e.Name(), ".md")
+			paths, _ := sporkPathsForTask(db, id)
+			sporksByTask[id] = paths
+		}
+		_ = db.Close()
 	}
 
-	found := false
+	codeDir, _ := sporkCodeDir()
+
+	var rows [][]string
 	for _, e := range entries {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
 			continue
 		}
 		id := strings.TrimSuffix(e.Name(), ".md")
 		notePath := filepath.Join(tasksDir, e.Name())
+
 		marker := " "
 		if linked[id] {
 			marker = "*"
 		}
-		fmt.Printf("  %s %-20s %s\n", marker, id, notePath)
-		found = true
+
+		sporks := "-"
+		if paths := sporksByTask[id]; len(paths) > 0 {
+			names := make([]string, 0, len(paths))
+			for _, p := range paths {
+				if rel, err := filepath.Rel(codeDir, p); err == nil {
+					names = append(names, rel)
+				} else {
+					names = append(names, filepath.Base(p))
+				}
+			}
+			sporks = strings.Join(names, ",")
+		}
+
+		rows = append(rows, []string{marker, id, sporks, notePath})
 	}
-	if !found {
+
+	if len(rows) == 0 {
 		fmt.Println("no tasks")
+		return nil
 	}
-	return nil
+
+	tw := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(tw, "  \tID\tSPORKS\tNOTES")
+	for _, r := range rows {
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", r[0], r[1], r[2], r[3])
+	}
+	return tw.Flush()
 }

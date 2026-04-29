@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
+	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 )
@@ -32,13 +35,49 @@ func runList() error {
 		return nil
 	}
 
-	for _, wt := range worktrees {
-		name := filepath.Base(wt.Path)
-		if wt.Branch != "" && wt.Branch != "spork/"+name {
-			fmt.Printf("  %s\t%s\t(%s)\n", name, wt.Path, wt.Branch)
-		} else {
-			fmt.Printf("  %s\t%s\n", name, wt.Path)
-		}
+	codeDir, err := sporkCodeDir()
+	if err != nil {
+		return err
 	}
-	return nil
+
+	currentPath, _ := currentSporkPath()
+
+	tasksBySpork := map[string][]string{}
+	if db, dbErr := openDB(); dbErr == nil {
+		for _, wt := range worktrees {
+			ids, _ := taskIDsForSpork(db, wt.Path)
+			tasksBySpork[wt.Path] = ids
+		}
+		_ = db.Close()
+	}
+
+	tw := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(tw, "  \tNAME\tREPO\tBRANCH\tTASKS")
+	for _, wt := range worktrees {
+		marker := " "
+		if wt.Path == currentPath {
+			marker = "*"
+		}
+
+		name := filepath.Base(wt.Path)
+		repo := "-"
+		if rel, err := filepath.Rel(codeDir, wt.Path); err == nil {
+			if dir := filepath.Dir(rel); dir != "." {
+				repo = dir
+			}
+		}
+
+		branch := wt.Branch
+		if branch == "" {
+			branch = "-"
+		}
+
+		tasks := "-"
+		if ids := tasksBySpork[wt.Path]; len(ids) > 0 {
+			tasks = strings.Join(ids, ",")
+		}
+
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", marker, name, repo, branch, tasks)
+	}
+	return tw.Flush()
 }
