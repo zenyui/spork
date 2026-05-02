@@ -1,8 +1,8 @@
 # spork
 
-Git worktrees, but with all your gitignored stuff (`node_modules`, `.env`, build artifacts) already in place — a fully working dev environment in a sibling directory, ready immediately.
+Simple, effective git worktree management for local development with coding agents.
 
-No more juggling stashes. No more "hold on let me commit this first." Just `spork new` and you're off.
+`spork new <name>` creates a worktree on a fresh branch with every gitignored file (`node_modules`, `.env`, build artifacts) cloned via copy-on-write — a ready-to-run sibling checkout in seconds. Per-task notes give agents a place to track context. That's it.
 
 ## Install
 
