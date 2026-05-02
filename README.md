@@ -65,3 +65,34 @@ spork task note ENG-1234
 ## Run from anywhere
 
 All commands resolve back to the main worktree, so you can run `spork new` from inside an existing spork. It just works.
+
+## Use with Claude Code
+
+Drop this into `~/.claude/CLAUDE.md` so Claude picks up the spork context at the start of every conversation:
+
+````markdown
+## Spork Task Tracking
+
+When starting a conversation, check if you're inside a spork worktree by running:
+```sh
+spork status
+```
+
+If you're in a spork:
+- Run `spork task list` to see all tasks (`*` marks tasks linked to this spork)
+- Read the markdown files for any linked tasks to understand the context of the work
+- As you work, update the linked task markdown files with notes, decisions, and progress
+- When you complete a checklist item in a task file, mark it done with `[x]`
+- If the user creates a new task or links one, use `spork task link <id>` or `spork task link <id> --create`
+
+Task notes live at `~/.spork/tasks/<id>.md` — read and write them directly.
+
+Key spork commands:
+- `spork status` — current spork name, repo, branch, linked tasks
+- `spork task list` — all tasks, `*` = linked to current spork
+- `spork task show <id>` — task details + linked sporks
+- `spork task create <id>` — create a new task
+- `spork task link <id>` — link current spork to a task
+- `spork task link <id> --create` — create + link in one shot
+- `spork task unlink <id>` — unlink current spork from a task
+````
