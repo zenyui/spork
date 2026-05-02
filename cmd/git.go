@@ -128,7 +128,7 @@ func getIgnoredEntries(repoRoot string) ([]string, error) {
 }
 
 func gitOutput(args ...string) (string, error) {
-	cmd := exec.Command("git", args...)
+	cmd := exec.Command("git", args...) //nolint:gosec // args are constructed by spork, not untrusted input
 	out, err := cmd.Output()
 	if err != nil {
 		return "", err
@@ -137,7 +137,7 @@ func gitOutput(args ...string) (string, error) {
 }
 
 func gitRun(args ...string) error {
-	cmd := exec.Command("git", args...)
+	cmd := exec.Command("git", args...) //nolint:gosec // args are constructed by spork, not untrusted input
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()

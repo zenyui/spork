@@ -1,6 +1,6 @@
 package main
 
-import "github.com/layer-nine/spork/cmd"
+import "github.com/zenyui/spork/cmd"
 
 func main() {
 	cmd.Execute()
