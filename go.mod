@@ -1,4 +1,4 @@
-module github.com/layer-nine/spork
+module github.com/zenyui/spork
 
 go 1.25.0
 

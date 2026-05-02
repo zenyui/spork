@@ -1,9 +1,0 @@
-#!/bin/bash
-set -euo pipefail
-
-echo "Setting up SSH for GitHub checkout..."
-
-# Set GIT_SSH_COMMAND to accept new host keys automatically
-export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new"
-
-echo "GIT_SSH_COMMAND set to: $GIT_SSH_COMMAND"
