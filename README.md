@@ -1,8 +1,10 @@
 # spork
 
-Simplifies local parallel agent development on a single repo.
+Simplifies local parallel agent development.
 
-`spork new <name>` creates a git worktree on a fresh branch with every gitignored file (`node_modules`, `.env`, build artifacts) cloned via copy-on-write — a ready-to-run sibling checkout in seconds. Spin one up per agent and let them work without stepping on each other. Per-task notes give each agent a place to leave context.
+A **spork** is a git worktree on a fresh branch with all your gitignored files (`node_modules`, `.env`, build artifacts) cloned via copy-on-write — a ready-to-run sibling checkout in seconds, one per agent.
+
+A **task** is a markdown notes file that can be linked to sporks across multiple repos, so an agent's context follows the work — not the codebase.
 
 ## Install
 
