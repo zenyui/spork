@@ -1,6 +1,6 @@
 # spork
 
-A CLI tool that forks your repo into git worktrees and copies all the gitignored stuff so you get a fully working dev environment in a separate directory.
+Git worktrees, but with all your gitignored stuff (`node_modules`, `.env`, build artifacts) already in place — a fully working dev environment in a sibling directory, ready immediately.
 
 No more juggling stashes. No more "hold on let me commit this first." Just `spork new` and you're off.
 
