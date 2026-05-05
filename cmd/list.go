@@ -24,15 +24,27 @@ func init() {
 	rootCmd.AddCommand(listCmd)
 }
 
+type worktreeListItem struct {
+	Name    string   `json:"name"`
+	Repo    string   `json:"repo"`
+	Branch  string   `json:"branch"`
+	Path    string   `json:"path"`
+	Current bool     `json:"current"`
+	Tasks   []string `json:"tasks"`
+}
+
+type worktreeListOutput struct {
+	Worktrees []worktreeListItem `json:"worktrees"`
+}
+
 func runList() error {
-	worktrees, err := sporkWorktrees()
-	if err != nil {
+	if err := validateFormat(); err != nil {
 		return err
 	}
 
-	if len(worktrees) == 0 {
-		fmt.Println("no spork worktrees")
-		return nil
+	worktrees, err := sporkWorktrees()
+	if err != nil {
+		return err
 	}
 
 	codeDir, err := sporkCodeDir()
@@ -51,33 +63,60 @@ func runList() error {
 		_ = db.Close()
 	}
 
-	tw := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(tw, "  \tNAME\tREPO\tBRANCH\tTASKS")
+	items := []worktreeListItem{}
 	for _, wt := range worktrees {
-		marker := " "
-		if wt.Path == currentPath {
-			marker = "*"
-		}
-
 		name := filepath.Base(wt.Path)
-		repo := "-"
+		repo := ""
 		if rel, err := filepath.Rel(codeDir, wt.Path); err == nil {
 			if dir := filepath.Dir(rel); dir != "." {
 				repo = dir
 			}
 		}
 
-		branch := wt.Branch
+		ids := tasksBySpork[wt.Path]
+		if ids == nil {
+			ids = []string{}
+		}
+
+		items = append(items, worktreeListItem{
+			Name:    name,
+			Repo:    repo,
+			Branch:  wt.Branch,
+			Path:    wt.Path,
+			Current: wt.Path == currentPath,
+			Tasks:   ids,
+		})
+	}
+
+	if isJSONOut() {
+		return emitJSON(worktreeListOutput{Worktrees: items})
+	}
+
+	if len(items) == 0 {
+		fmt.Println("no spork worktrees")
+		return nil
+	}
+
+	tw := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(tw, "  \tNAME\tREPO\tBRANCH\tTASKS")
+	for _, item := range items {
+		marker := " "
+		if item.Current {
+			marker = "*"
+		}
+		repo := item.Repo
+		if repo == "" {
+			repo = "-"
+		}
+		branch := item.Branch
 		if branch == "" {
 			branch = "-"
 		}
-
 		tasks := "-"
-		if ids := tasksBySpork[wt.Path]; len(ids) > 0 {
-			tasks = strings.Join(ids, ",")
+		if len(item.Tasks) > 0 {
+			tasks = strings.Join(item.Tasks, ",")
 		}
-
-		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", marker, name, repo, branch, tasks)
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", marker, item.Name, repo, branch, tasks)
 	}
 	return tw.Flush()
 }

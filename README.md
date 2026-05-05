@@ -62,6 +62,10 @@ spork task show ENG-1234
 spork task note ENG-1234
 ```
 
+## JSON output
+
+`list`, `status`, `task list`, and `task show` accept `--output-format json` for scripting and agents. `task show --output-format json` also parses GFM checklist items (`- [ ]` / `- [x]`) into a structured `checklist` array. `status --output-format json` exits 0 with `{"in_spork": false}` when run outside a spork (text mode still errors).
+
 ## Run from anywhere
 
 All commands resolve back to the main worktree, so you can run `spork new` from inside an existing spork. It just works.
