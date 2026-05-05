@@ -20,9 +20,30 @@ func init() {
 	rootCmd.AddCommand(statusCmd)
 }
 
+type statusTask struct {
+	ID        string `json:"id"`
+	NotesPath string `json:"notes_path"`
+}
+
+type statusOutput struct {
+	InSpork bool         `json:"in_spork"`
+	Name    string       `json:"name,omitempty"`
+	Repo    string       `json:"repo,omitempty"`
+	Branch  string       `json:"branch,omitempty"`
+	Path    string       `json:"path,omitempty"`
+	Tasks   []statusTask `json:"tasks"`
+}
+
 func runStatus() error {
+	if err := validateFormat(); err != nil {
+		return err
+	}
+
 	sporkPath, err := currentSporkPath()
 	if err != nil {
+		if isJSONOut() {
+			return emitJSON(statusOutput{InSpork: false, Tasks: []statusTask{}})
+		}
 		return fmt.Errorf("not in a spork worktree")
 	}
 
@@ -36,29 +57,39 @@ func runStatus() error {
 
 	branch, _ := gitOutput("rev-parse", "--abbrev-ref", "HEAD")
 
+	tasksDir, _ := sporkTasksDir()
+	tasks := []statusTask{}
+	if db, dbErr := openDB(); dbErr == nil {
+		ids, _ := taskIDsForSpork(db, sporkPath)
+		for _, id := range ids {
+			tasks = append(tasks, statusTask{
+				ID:        id,
+				NotesPath: filepath.Join(tasksDir, id+".md"),
+			})
+		}
+		_ = db.Close()
+	}
+
+	if isJSONOut() {
+		return emitJSON(statusOutput{
+			InSpork: true,
+			Name:    name,
+			Repo:    repo,
+			Branch:  branch,
+			Path:    sporkPath,
+			Tasks:   tasks,
+		})
+	}
+
 	fmt.Printf("spork:  %s\n", name)
 	fmt.Printf("repo:   %s\n", repo)
 	if branch != "" {
 		fmt.Printf("branch: %s\n", branch)
 	}
-
-	db, dbErr := openDB()
-	if dbErr != nil {
-		return nil
-	}
-	defer db.Close()
-
-	ids, err := taskIDsForSpork(db, sporkPath)
-	if err != nil {
-		return nil
-	}
-
-	if len(ids) > 0 {
-		tasksDir, _ := sporkTasksDir()
+	if len(tasks) > 0 {
 		fmt.Println("tasks:")
-		for _, id := range ids {
-			notePath := filepath.Join(tasksDir, id+".md")
-			fmt.Printf("  %-20s %s\n", id, notePath)
+		for _, t := range tasks {
+			fmt.Printf("  %-20s %s\n", t.ID, t.NotesPath)
 		}
 	} else {
 		fmt.Println("tasks:  (none)")

@@ -24,19 +24,30 @@ func init() {
 	taskCmd.AddCommand(taskListCmd)
 }
 
+type taskListItem struct {
+	ID        string     `json:"id"`
+	Linked    bool       `json:"linked"`
+	NotesPath string     `json:"notes_path"`
+	Sporks    []sporkRef `json:"sporks"`
+}
+
+type taskListOutput struct {
+	Tasks []taskListItem `json:"tasks"`
+}
+
 func runTaskList() error {
+	if err := validateFormat(); err != nil {
+		return err
+	}
+
 	tasksDir, err := sporkTasksDir()
 	if err != nil {
 		return err
 	}
 
-	entries, err := os.ReadDir(tasksDir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			fmt.Println("no tasks")
-			return nil
-		}
-		return err
+	entries, readErr := os.ReadDir(tasksDir)
+	if readErr != nil && !os.IsNotExist(readErr) {
+		return readErr
 	}
 
 	linked := map[string]bool{}
@@ -62,7 +73,7 @@ func runTaskList() error {
 
 	codeDir, _ := sporkCodeDir()
 
-	var rows [][]string
+	items := []taskListItem{}
 	for _, e := range entries {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
 			continue
@@ -70,36 +81,48 @@ func runTaskList() error {
 		id := strings.TrimSuffix(e.Name(), ".md")
 		notePath := filepath.Join(tasksDir, e.Name())
 
-		marker := " "
-		if linked[id] {
-			marker = "*"
-		}
-
-		sporks := "-"
-		if paths := sporksByTask[id]; len(paths) > 0 {
-			names := make([]string, 0, len(paths))
-			for _, p := range paths {
-				if rel, err := filepath.Rel(codeDir, p); err == nil {
-					names = append(names, rel)
-				} else {
-					names = append(names, filepath.Base(p))
-				}
+		refs := []sporkRef{}
+		for _, p := range sporksByTask[id] {
+			name := filepath.Base(p)
+			if rel, err := filepath.Rel(codeDir, p); err == nil {
+				name = rel
 			}
-			sporks = strings.Join(names, ",")
+			refs = append(refs, sporkRef{Name: name, Path: p})
 		}
 
-		rows = append(rows, []string{marker, id, sporks, notePath})
+		items = append(items, taskListItem{
+			ID:        id,
+			Linked:    linked[id],
+			NotesPath: notePath,
+			Sporks:    refs,
+		})
 	}
 
-	if len(rows) == 0 {
+	if isJSONOut() {
+		return emitJSON(taskListOutput{Tasks: items})
+	}
+
+	if len(items) == 0 {
 		fmt.Println("no tasks")
 		return nil
 	}
 
 	tw := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(tw, "  \tID\tSPORKS\tNOTES")
-	for _, r := range rows {
-		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", r[0], r[1], r[2], r[3])
+	for _, item := range items {
+		marker := " "
+		if item.Linked {
+			marker = "*"
+		}
+		sporks := "-"
+		if len(item.Sporks) > 0 {
+			names := make([]string, 0, len(item.Sporks))
+			for _, s := range item.Sporks {
+				names = append(names, s.Name)
+			}
+			sporks = strings.Join(names, ",")
+		}
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", marker, item.ID, sporks, item.NotesPath)
 	}
 	return tw.Flush()
 }

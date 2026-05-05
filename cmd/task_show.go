@@ -21,7 +21,18 @@ func init() {
 	taskCmd.AddCommand(taskShowCmd)
 }
 
+type taskShowOutput struct {
+	ID        string          `json:"id"`
+	NotesPath string          `json:"notes_path"`
+	Sporks    []sporkRef      `json:"sporks"`
+	Checklist []checklistItem `json:"checklist"`
+}
+
 func runTaskShow(id string) error {
+	if err := validateFormat(); err != nil {
+		return err
+	}
+
 	tasksDir, err := sporkTasksDir()
 	if err != nil {
 		return err
@@ -31,26 +42,39 @@ func runTaskShow(id string) error {
 		return fmt.Errorf("task %q not found", id)
 	}
 
+	codeDir, _ := sporkCodeDir()
+	refs := []sporkRef{}
+	if db, dbErr := openDB(); dbErr == nil {
+		paths, _ := sporkPathsForTask(db, id)
+		for _, p := range paths {
+			name := filepath.Base(p)
+			if rel, err := filepath.Rel(codeDir, p); err == nil {
+				name = rel
+			}
+			refs = append(refs, sporkRef{Name: name, Path: p})
+		}
+		_ = db.Close()
+	}
+
+	if isJSONOut() {
+		checklist, _ := parseChecklist(notePath)
+		if checklist == nil {
+			checklist = []checklistItem{}
+		}
+		return emitJSON(taskShowOutput{
+			ID:        id,
+			NotesPath: notePath,
+			Sporks:    refs,
+			Checklist: checklist,
+		})
+	}
+
 	fmt.Printf("task:  %s\n", id)
 	fmt.Printf("notes: %s\n", notePath)
-
-	db, dbErr := openDB()
-	if dbErr != nil {
-		return nil
-	}
-	defer db.Close()
-
-	paths, err := sporkPathsForTask(db, id)
-	if err != nil {
-		return nil
-	}
-
-	if len(paths) > 0 {
-		codeDir, _ := sporkCodeDir()
+	if len(refs) > 0 {
 		fmt.Println("sporks:")
-		for _, p := range paths {
-			rel, _ := filepath.Rel(codeDir, p)
-			fmt.Printf("  %s\t%s\n", rel, p)
+		for _, r := range refs {
+			fmt.Printf("  %s\t%s\n", r.Name, r.Path)
 		}
 	}
 	return nil
