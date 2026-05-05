@@ -54,7 +54,7 @@ var checklistRE = regexp.MustCompile(`^[-*]\s+\[([ xX])\]\s+(.+?)\s*$`)
 
 // parseChecklist scans a markdown file for `- [ ]` / `- [x]` task list items.
 func parseChecklist(path string) ([]checklistItem, error) {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) //nolint:gosec // path is built from CLI-supplied task id under ~/.spork/tasks/, same trust model as the rest of spork
 	if err != nil {
 		return nil, err
 	}
