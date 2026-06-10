@@ -21,7 +21,7 @@ func init() {
 }
 
 func runPath(name string) error {
-	worktrees, err := sporkWorktrees()
+	worktrees, err := gatherSporks()
 	if err != nil {
 		return err
 	}
