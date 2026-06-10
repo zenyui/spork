@@ -209,7 +209,7 @@ func allSporksFromFS() ([]worktreeInfo, error) {
 // its .git file to the main repo's worktree gitdir and reading HEAD.
 // Returns empty string on any failure (detached HEAD, missing files, etc).
 func readWorktreeBranch(worktreePath string) string {
-	gitFile, err := os.ReadFile(filepath.Join(worktreePath, ".git"))
+	gitFile, err := os.ReadFile(filepath.Join(worktreePath, ".git")) //nolint:gosec // worktreePath enumerated from ~/.spork/code
 	if err != nil {
 		return ""
 	}
@@ -221,7 +221,7 @@ func readWorktreeBranch(worktreePath string) string {
 	if !filepath.IsAbs(gitDir) {
 		gitDir = filepath.Join(worktreePath, gitDir)
 	}
-	head, err := os.ReadFile(filepath.Join(gitDir, "HEAD"))
+	head, err := os.ReadFile(filepath.Join(gitDir, "HEAD")) //nolint:gosec // gitDir derived from enumerated worktreePath
 	if err != nil {
 		return ""
 	}
