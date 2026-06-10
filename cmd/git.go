@@ -40,7 +40,7 @@ func listWorktrees() ([]worktreeInfo, error) {
 	for _, line := range strings.Split(out, "\n") {
 		switch {
 		case strings.HasPrefix(line, "worktree "):
-			current = worktreeInfo{Path: strings.TrimPrefix(line, "worktree ")}
+			current = worktreeInfo{Path: filepath.Clean(strings.TrimPrefix(line, "worktree "))}
 		case strings.HasPrefix(line, "branch refs/heads/"):
 			current.Branch = strings.TrimPrefix(line, "branch refs/heads/")
 		case line == "":
