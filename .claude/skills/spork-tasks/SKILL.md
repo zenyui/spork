@@ -1,5 +1,5 @@
 ---
-name: spork-tasks
+name: spork
 description: Track work inside spork git worktrees. Use at the start of a conversation to detect the current spork, and whenever the user mentions sporks, worktrees, or tasks — to read and update linked task notes (~/.spork/tasks/<id>.md) and manage task links.
 ---
 
