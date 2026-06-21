@@ -42,7 +42,7 @@ func runList() error {
 		return err
 	}
 
-	worktrees, err := sporkWorktrees()
+	worktrees, err := gatherSporks()
 	if err != nil {
 		return err
 	}

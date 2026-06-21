@@ -70,6 +70,24 @@ spork task note ENG-1234
 
 All commands resolve back to the main worktree, so you can run `spork new` from inside an existing spork. It just works.
 
+`spork list`, `spork path`, and `spork pick` also work from outside any git repo — they fall back to walking `~/.spork/code/` so you can find your sporks from any terminal.
+
+## Picking a spork
+
+`spork pick` interactively picks a repo and then a spork, prints the chosen path, and opens a new terminal window/tab at that worktree. Uses Windows Terminal (`wt`) on Windows, Terminal.app on macOS, and the system terminal emulator on Linux — best-effort and silent if no terminal launcher is found.
+
+If you'd rather cd in place, compose with your shell:
+
+```sh
+# bash / zsh
+cd "$(spork pick)"
+```
+
+```powershell
+# PowerShell
+Set-Location (spork pick)
+```
+
 ## Use with Claude Code
 
 Drop this into `~/.claude/CLAUDE.md` so Claude picks up the spork context at the start of every conversation:
