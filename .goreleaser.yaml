@@ -1,0 +1,49 @@
+# GoReleaser configuration — https://goreleaser.com
+# Builds cross-platform binaries for the major OSes. Releases are tagged by
+# semantic-release in CI; GoReleaser only attaches the binaries + checksums to
+# the release it creates (see .github/workflows/ci.yml).
+version: 2
+
+project_name: spork
+
+builds:
+  - id: spork
+    main: .
+    binary: spork
+    # Pure-Go SQLite (modernc.org/sqlite) means no cgo, so cross-compiling is clean.
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X github.com/zenyui/spork/cmd.Version={{ .Version }}
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: spork
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+# semantic-release writes the release notes; don't let GoReleaser touch the body.
+changelog:
+  disable: true
+
+release:
+  mode: keep-existing

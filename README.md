@@ -1,5 +1,7 @@
 # spork
 
+[![CI](https://img.shields.io/github/actions/workflow/status/zenyui/spork/ci.yml?branch=main&label=CI)](https://github.com/zenyui/spork/actions/workflows/ci.yml)
+
 A CLI tool that forks your repo into git worktrees and copies all the gitignored stuff so you get a fully working dev environment in a separate directory.
 
 No more juggling stashes. No more "hold on let me commit this first." Just `spork new` and you're off.
@@ -90,31 +92,13 @@ Set-Location (spork pick)
 
 ## Use with Claude Code
 
-Drop this into `~/.claude/CLAUDE.md` so Claude picks up the spork context at the start of every conversation:
+Spork ships a [Claude Code skill](https://docs.claude.com/en/docs/claude-code/skills) at [`.claude/skills/spork-tasks/`](.claude/skills/spork-tasks/SKILL.md). Claude loads it on demand — when you're inside a spork or mention tasks — so it picks up the spork context without bloating every conversation.
 
-````markdown
-## Spork Task Tracking
+To use it across all your projects, install it at the user level:
 
-When starting a conversation, check if you're inside a spork worktree by running:
 ```sh
-spork status
+mkdir -p ~/.claude/skills
+cp -R .claude/skills/spork-tasks ~/.claude/skills/
 ```
 
-If you're in a spork:
-- Run `spork task list` to see all tasks (`*` marks tasks linked to this spork)
-- Read the markdown files for any linked tasks to understand the context of the work
-- As you work, update the linked task markdown files with notes, decisions, and progress
-- When you complete a checklist item in a task file, mark it done with `[x]`
-- If the user creates a new task or links one, use `spork task link <id>` or `spork task link <id> --create`
-
-Task notes live at `~/.spork/tasks/<id>.md` — read and write them directly.
-
-Key spork commands:
-- `spork status` — current spork name, repo, branch, linked tasks
-- `spork task list` — all tasks, `*` = linked to current spork
-- `spork task show <id>` — task details + linked sporks
-- `spork task create <id>` — create a new task
-- `spork task link <id>` — link current spork to a task
-- `spork task link <id> --create` — create + link in one shot
-- `spork task unlink <id>` — unlink current spork from a task
-````
+Once installed, Claude will check `spork status` at the start of a conversation, read linked task notes, and keep them updated as you work.
